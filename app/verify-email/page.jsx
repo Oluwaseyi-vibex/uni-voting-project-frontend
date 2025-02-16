@@ -1,10 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import axios from "axios";
 import toast from "react-hot-toast";
 
-export default function VerifyEmail() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token");
@@ -37,5 +37,13 @@ export default function VerifyEmail() {
       </h2>
       {!loading && <p>Redirecting...</p>}
     </div>
+  );
+}
+
+export default function VerifyEmail() {
+  return (
+    <Suspense fallback={<p>Loading...</p>}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }
