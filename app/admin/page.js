@@ -13,6 +13,14 @@ export default function Admin() {
   const [results, setResults] = useState({});
   const router = useRouter();
 
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     window.location.reload();
+  //   }, 5000);
+
+  //   return () => clearInterval(interval); // Cleanup on unmount
+  // }, []);
+
   useEffect(() => {
     const storedEmail = localStorage.getItem("userEmail");
     const storedRole = localStorage.getItem("role")?.trim().toLowerCase();
@@ -29,7 +37,7 @@ export default function Admin() {
     const fetchResults = async () => {
       try {
         const response = await axios.get(
-          "https://uni-voting-project-backend.onrender.com/results"
+          `${process.env.NEXT_PUBLIC_BASE_URL}/results`
         );
 
         // Group results by position
@@ -46,19 +54,19 @@ export default function Admin() {
     };
 
     fetchResults();
+    const interval = setInterval(fetchResults, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleAddCandidate = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(
-        "https://uni-voting-project-backend.onrender.com/add-candidate",
-        {
-          name,
-          party,
-          position,
-        }
-      );
+      await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/add-candidate`, {
+        name,
+        party,
+        position,
+      });
       toast.success("Candidate added successfully");
       setName("");
       setParty("");
@@ -68,6 +76,27 @@ export default function Admin() {
     }
   };
 
+  const deleteCandidate = async (candidateId) => {
+    try {
+      await axios.delete(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/delete-candidate/${candidateId}`
+      );
+      toast.success("Candidate deleted successfully");
+      setCandidates((prev) => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach((position) => {
+          updated[position] = updated[position].filter(
+            (c) => c.id !== candidateId
+          );
+        });
+        return updated;
+      });
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to delete candidate"
+      );
+    }
+  };
   return (
     <div className="bg-white p-6 mx-4 rounded-lg shadow-md w-full max-w-2xl">
       <h2 className="text-xl font-bold mb-4">Admin - Add Candidate</h2>
@@ -108,8 +137,8 @@ export default function Admin() {
       {Object.keys(results).map((position) => (
         <div key={position} className="mt-4">
           <h2 className="text-lg font-semibold">{position}</h2>
-          <ul className="space-y-2">
-            {results[position].map((candidate) => (
+          {results[position].map((candidate) => (
+            <ul className="space-y-2">
               <li
                 key={candidate.id}
                 className="p-2 border rounded flex justify-between"
@@ -119,8 +148,14 @@ export default function Admin() {
                 </span>
                 <span className="font-bold">{candidate.votes} votes</span>
               </li>
-            ))}
-          </ul>
+              <button
+                className="bg-red-500 text-white px-3 py-1 rounded"
+                onClick={() => deleteCandidate(candidate.id)}
+              >
+                Remove Candidate
+              </button>
+            </ul>
+          ))}
         </div>
       ))}
     </div>

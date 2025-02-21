@@ -9,6 +9,8 @@ import Link from "next/link";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -21,26 +23,33 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
+      setLoading(true);
       const { data } = await axios.post(
-        "https://uni-voting-project-backend.onrender.com/login",
+        `${process.env.NEXT_PUBLIC_BASE_URL}/login`,
         {
           email,
           password,
         }
       );
+      setLoading(false);
       toast.success("Login successful");
       console.log(data);
       localStorage.setItem("token", data.token);
-      localStorage.setItem("userEmail", email); // Store the email
-      localStorage.setItem("role", data.role); // Store the role
+      localStorage.setItem("userEmail", email);
+      localStorage.setItem("role", data.role);
+      localStorage.setItem("name", data.name);
       router.push("/dashboard");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Invalid credentials");
+      setLoading(false);
+      const errorMessage =
+        error.response?.data?.message || "Invalid credentials";
+      console.error("Login Error:", errorMessage);
+      toast.error(errorMessage);
     }
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md w-96">
+    <div className="bg-white mx-4 p-6 rounded-lg shadow-md w-96">
       <h2 className="text-xl font-bold mb-4">Login</h2>
       <form onSubmit={handleLogin} className="space-y-4">
         <input
@@ -60,10 +69,13 @@ export default function Login() {
           required
         />
         <button
-          className="w-full bg-green-500 text-white p-2 rounded"
+          className={`w-full ${
+            loading ? "bg-gray-400" : "bg-green-500"
+          } text-white p-2 rounded`}
           type="submit"
+          disabled={loading}
         >
-          Login
+          {loading ? "Logging in..." : "Login"}
         </button>
       </form>
       <p className="mt-4 font-medium">
